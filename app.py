@@ -1,45 +1,45 @@
-from flask import Flask, request, jsonify, render_template
-from engine import obfuscate, ObfuscationError
-import os
+from flask import Flask, request, render_template_string
+from obfuscator import obfuscate
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # 2MB max
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+<title>Lua Obfuscator</title>
+<style>
+body{background:#0f0f0f;color:white;font-family:monospace;padding:40px}
+textarea{width:100%;height:300px;background:#1a1a1a;color:#0f0;border:none;padding:10px}
+button{padding:10px 20px;margin-top:10px;background:#00ff88;border:none}
+</style>
+</head>
+<body>
 
-@app.route('/obfuscate', methods=['POST'])
-def obfuscate_endpoint():
-    data = request.get_json()
-    if not data or 'source' not in data:
-        return jsonify({'error': 'No source provided'}), 400
+<h1>Lua Obfuscator</h1>
 
-    source = data['source']
-    if not source.strip():
-        return jsonify({'error': 'Empty source'}), 400
+<form method="post">
+<textarea name="code" placeholder="paste lua code here"></textarea>
+<br>
+<button>Obfuscate</button>
+</form>
 
-    if len(source) > 500_000:
-        return jsonify({'error': 'Source too large (max 500KB)'}), 400
+{% if result %}
+<h2>Result</h2>
+<textarea>{{result}}</textarea>
+{% endif %}
 
-    options = {
-        'dead_code': data.get('dead_code', True),
-        'watermark': data.get('watermark', True),
-    }
+</body>
+</html>
+"""
 
-    try:
-        result = obfuscate(source, options)
-        return jsonify({
-            'success': True,
-            'result': result,
-            'original_size': len(source),
-            'obfuscated_size': len(result),
-        })
-    except ObfuscationError as e:
-        return jsonify({'error': str(e)}), 400
-    except Exception as e:
-        return jsonify({'error': f'Internal error: {str(e)}'}), 500
+@app.route("/", methods=["GET","POST"])
+def home():
+    result = None
+    if request.method == "POST":
+        code = request.form["code"]
+        result = obfuscate(code)
+    return render_template_string(HTML,result=result)
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
