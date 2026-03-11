@@ -1,10 +1,9 @@
 """
 Main obfuscation pipeline - ties together all passes
 """
-from .lexer import Lexer, LexerError
-from .parser import Parser, ParseError
-from .vm import Compiler, generate_vm_lua
-from .passes import post_process
+from lexer import Lexer, LexerError
+from parser import Parser
+from vm import VM
 
 class ObfuscationError(Exception):
     pass
